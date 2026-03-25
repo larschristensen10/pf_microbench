@@ -1,0 +1,13 @@
+# Prefetcher configurations for MSR 0x1A4
+# MSR 0x1A4 bits: 0=L2 HW(AMP), 1=L2 adjacent, 2=DCU HW, 3=DCU IP
+# Setting a bit DISABLES that prefetcher
+#
+# ID | hex_value | description
+0 | 0x00 | All prefetchers enabled (default)
+1 | 0x0F | All prefetchers disabled
+2 | 0x0E | Only L2 HW prefetcher (AMP) enabled
+3 | 0x0D | Only L2 adjacent line prefetcher enabled
+4 | 0x0B | Only DCU streamer enabled
+5 | 0x07 | Only DCU IP prefetcher enabled
+6 | 0x01 | All except L2 HW prefetcher (AMP disabled only)
+7 | 0x0C | L2 HW + L2 adjacent enabled
