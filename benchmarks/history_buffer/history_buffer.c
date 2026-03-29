@@ -98,11 +98,16 @@ int main(int argc, char *argv[])
      */
     size_t n_pages = max_poison + 2;
     size_t buf_size = n_pages * PAGE_SIZE;
-    volatile char *buffer = (volatile char *)alloc_hugepages(buf_size);
+    /* Use regular pages, not hugepages: each poison access hits a distinct
+     * 4K page by design, so hugepages provide no TLB benefit and the
+     * allocation (just over 2MB) can straddle a hugepage boundary unreliably. */
+    volatile char *buffer = (volatile char *)mmap(NULL, buf_size,
+        PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (buffer == MAP_FAILED) {
-        perror("alloc_hugepages");
+        perror("mmap");
         return 1;
     }
+    memset((void *)buffer, 0, buf_size);
 
     volatile char *pattern_base = buffer;
     int measure_line = TRAIN_LEN + RESUME_LEN + MEASURE_AHEAD;
@@ -178,6 +183,6 @@ int main(int argc, char *argv[])
     }
 
     free(samples);
-    free_hugepages((void *)buffer, buf_size);
+    munmap((void *)buffer, buf_size);
     return 0;
 }
