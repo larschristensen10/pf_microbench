@@ -47,20 +47,21 @@ int main(void)
 
     /* --- Test 1: Sequential stride-1, measure beyond training --- */
     printf("=== Test 1: stride-1 sequential, measure lines beyond training ===\n");
-    printf("(Flush 0-20, train 0-7, wait, measure 8-15)\n");
+    printf("(Flush 0-30, train 0-15, wait, measure 16-23)\n");
 
-    for (int measure_at = 8; measure_at <= 15; measure_at++) {
+    for (int measure_at = 16; measure_at <= 23; measure_at++) {
         uint64_t samples[REPS];
         for (int rep = 0; rep < REPS; rep++) {
             /* Flush */
-            for (int l = 0; l < 20; l++)
+            for (int l = 0; l < 30; l++)
                 clflush(buf + (size_t)l * 64);
             mfence();
 
             /* Train stride-1 */
-            for (int l = 0; l < 8; l++) {
+            for (int l = 0; l < 16; l++) {
                 compiler_barrier();
                 force_read(buf + (size_t)l * 64);
+                delay_cycles(TRAIN_DELAY);
             }
             compiler_barrier();
 

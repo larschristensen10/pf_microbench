@@ -147,6 +147,7 @@ int main(int argc, char *argv[])
             for (int l = 0; l < TRAIN_LEN; l++) {
                 compiler_barrier();
                 force_read(pattern_base + (size_t)l * CACHELINE_SIZE);
+                delay_cycles(TRAIN_DELAY);
             }
             compiler_barrier();
 
@@ -156,6 +157,7 @@ int main(int argc, char *argv[])
             for (int p = 0; p < n_poison; p++) {
                 compiler_barrier();
                 force_read(buffer + (size_t)(p + 1) * PAGE_SIZE + 32 * CACHELINE_SIZE);
+                delay_cycles(TRAIN_DELAY);
             }
             compiler_barrier();
 
@@ -165,6 +167,7 @@ int main(int argc, char *argv[])
             for (int l = TRAIN_LEN; l < TRAIN_LEN + RESUME_LEN; l++) {
                 compiler_barrier();
                 force_read(pattern_base + (size_t)l * CACHELINE_SIZE);
+                delay_cycles(TRAIN_DELAY);
             }
             compiler_barrier();
 

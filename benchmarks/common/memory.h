@@ -69,6 +69,13 @@ static inline uint64_t force_read(volatile void *addr)
     return val;
 }
 
+/* Inter-access delay during training phases (cycles).
+ * Without this, back-to-back loads on Golden Cove / Raptor Cove fire
+ * simultaneously through the OoO pipeline and the L2 prefetcher never
+ * observes individual sequential misses. 200 cycles is sufficient for
+ * each miss to be registered before the next load issues. */
+#define TRAIN_DELAY 200
+
 /* Spin delay: busy-wait for approximately `cycles` TSC ticks.
  * Used to give the prefetcher time to issue and complete fetches. */
 static inline void delay_cycles(uint64_t cycles)

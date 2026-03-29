@@ -138,6 +138,7 @@ int main(int argc, char *argv[])
                 for (int i = 0; i < PATTERN_LEN; i++) {
                     compiler_barrier();
                     force_read(region + (size_t)PATTERN[i] * CACHELINE_SIZE);
+                    delay_cycles(TRAIN_DELAY);
                 }
                 compiler_barrier();
             }

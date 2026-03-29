@@ -128,6 +128,7 @@ int main(int argc, char *argv[])
                 for (int l = 0; l < train_len; l++) {
                     compiler_barrier();
                     force_read(buffer + (size_t)l * CACHELINE_SIZE);
+                    delay_cycles(TRAIN_DELAY);
                 }
                 compiler_barrier();
 
@@ -160,6 +161,7 @@ int main(int argc, char *argv[])
                 for (int l = 0; l < PD_TRAIN_LEN; l++) {
                     compiler_barrier();
                     force_read(buffer + (size_t)l * CACHELINE_SIZE);
+                    delay_cycles(TRAIN_DELAY);
                 }
                 compiler_barrier();
 
@@ -192,6 +194,7 @@ int main(int argc, char *argv[])
                 for (int l = 0; l < WS_TRAIN_LEN; l++) {
                     compiler_barrier();
                     force_read(buffer + (size_t)l * CACHELINE_SIZE);
+                    delay_cycles(TRAIN_DELAY);
                 }
                 compiler_barrier();
 

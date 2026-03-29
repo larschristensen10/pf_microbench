@@ -137,6 +137,7 @@ int main(int argc, char *argv[])
                 for (int l = 0; l < INITIAL_TRAIN; l++) {
                     compiler_barrier();
                     stubs[0](base + (size_t)l * CACHELINE_SIZE);
+                    delay_cycles(TRAIN_DELAY);
                 }
             }
             compiler_barrier();
@@ -149,6 +150,7 @@ int main(int argc, char *argv[])
                 for (int l = 0; l < EVICT_TRAIN; l++) {
                     compiler_barrier();
                     stubs[s](base + (size_t)l * CACHELINE_SIZE);
+                    delay_cycles(TRAIN_DELAY);
                 }
                 compiler_barrier();
             }
@@ -161,6 +163,7 @@ int main(int argc, char *argv[])
                 for (int l = INITIAL_TRAIN; l < INITIAL_TRAIN + RESUME_LEN; l++) {
                     compiler_barrier();
                     stubs[0](base + (size_t)l * CACHELINE_SIZE);
+                    delay_cycles(TRAIN_DELAY);
                 }
             }
             compiler_barrier();

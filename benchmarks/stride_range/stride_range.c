@@ -103,6 +103,7 @@ int main(int argc, char *argv[])
             for (int i = 0; i < TRAIN_ACCESSES; i++) {
                 compiler_barrier();
                 force_read(buffer + (size_t)(i * stride) * CACHELINE_SIZE);
+                delay_cycles(TRAIN_DELAY);
             }
             compiler_barrier();
 
