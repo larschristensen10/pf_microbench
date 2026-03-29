@@ -19,6 +19,10 @@ pf_microbench/
 │   │   ├── memory.h           # hugepage alloc, clflush, timed_load, force_read
 │   │   ├── calibrate.h        # latency calibration + stats interface
 │   │   └── common.c           # calibration, statistics, CSV output, core pinning
+│   ├── training_length/
+│   │   └── training_length.c  # Training length, prefetch degree, wait sensitivity
+│   ├── stride_range/
+│   │   └── stride_range.c     # Stride detection range
 │   ├── stream_tracker/
 │   │   └── stream_tracker.c   # Stream tracker table size
 │   ├── spatial_region/
@@ -36,6 +40,8 @@ pf_microbench/
 │   ├── setup/                  # System prep (existing)
 │   ├── execution/
 │   │   └── run_microbench_sweep.py  # Orchestrate all benchmarks
+│   ├── analysis/
+│   │   └── analyze_results.py  # Parse CSVs, plot, detect table sizes
 │   └── utils/                  # Logging/cleanup (existing)
 └── results/
     └── microbench/             # CSV output directory
@@ -43,7 +49,24 @@ pf_microbench/
 
 ## What Each Benchmark Measures
 
-### 1. Stream Tracker Table (`stream_tracker`)
+### Characterization Benchmarks (run first)
+
+#### Training Length / Prefetch Degree (`training_length`)
+
+Characterizes fundamental AMP prefetcher behavior in isolation (no eviction pressure). Should be run first to validate that the prefetcher is active and to calibrate parameters for the table-size benchmarks.
+
+**Modes:**
+- `--mode train-length` (default): Sweep training accesses 1..32, measure 1 line beyond. Finds the minimum number of stride-1 accesses before the prefetcher activates.
+- `--mode prefetch-degree`: Fix training=16, sweep measurement distance 1..64. Reveals how far ahead the prefetcher fetches.
+- `--mode wait-sensitivity`: Fix training=16, distance=1, sweep wait 100..10000 cycles. Reveals prefetcher response latency.
+
+#### Stride Detection Range (`stride_range`)
+
+Tests which stride values (1..64 cache lines) the AMP can detect. Trains with 16 stride-S accesses, then measures if the next stride element was prefetched.
+
+### Table-Size Benchmarks
+
+#### 1. Stream Tracker Table (`stream_tracker`)
 
 **Table:** Tracks active stride-based prefetch streams. Each entry monitors one stream's stride and direction.
 
@@ -174,8 +197,26 @@ All benchmarks follow the pattern: **flush → train → (evict) → resume → 
 1. Reserve 2MB hugepages
 2. Build benchmarks
 3. Set MSR to `0x0E` (only L2 AMP enabled)
-4. Run all 5 benchmark variants (stream_tracker, spatial_region replay, spatial_region eviction, history_buffer, ip_table)
-5. Run baseline with MSR `0x0F` (all disabled) for comparison
-6. Restore MSR to `0x00` and release hugepages
+4. Run characterization benchmarks first (training_length ×3 modes, stride_range)
+5. Run table-size benchmarks (stream_tracker, spatial_region replay, spatial_region eviction, history_buffer, ip_table)
+6. Run baseline with MSR `0x0F` (all disabled) for comparison
+7. Restore MSR to `0x00` and release hugepages
 
 Results are saved to `results/microbench/{timestamp}/`.
+
+## Analyzing Results
+
+```bash
+# Analyze a specific run:
+python3 scripts/analysis/analyze_results.py results/microbench/20260327_224721/
+
+# Auto-detect latest run:
+python3 scripts/analysis/analyze_results.py
+```
+
+The analysis script:
+- Parses all CSVs and detects table sizes (cliff points where hit_rate drops)
+- Detects characterization parameters (minimum training length, prefetch degree)
+- Generates plots with active vs baseline overlay (requires matplotlib)
+- Flags anomalies (always-zero results, high baseline hits, inverted patterns)
+- Writes `summary.txt` and PNG plots to `{results_dir}/analysis/`
