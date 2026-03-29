@@ -20,15 +20,15 @@
 #include "../common/memory.h"
 #include "../common/calibrate.h"
 
-#define INITIAL_TRAIN   4
-#define EVICT_TRAIN     8
-#define RESUME_LEN      4
-#define MEASURE_AHEAD   4
+#define INITIAL_TRAIN   16  /* must be >= 15 to activate AMP on Golden Cove */
+#define EVICT_TRAIN     16  /* same threshold for evictors to occupy tracker */
+#define RESUME_LEN      4   /* short resume: enough if tracked, not enough to re-learn */
+#define MEASURE_AHEAD   2   /* lines beyond resume to measure (within prefetch degree) */
 #define STREAM_SPACING  (512 * 1024)
 #define MAX_STUBS       128
 #define DEFAULT_REPS    5000
 #define PREFETCH_WAIT   1000
-#define LINES_PER_STREAM 24
+#define LINES_PER_STREAM 40
 
 /*
  * Each stub: loads from address in %rdi, returns value in %rax.
@@ -144,6 +144,7 @@ int main(int argc, char *argv[])
 
             /*
              * TRAIN evictor streams 1..N-1, each using its own stub
+             * Time the phase so we can pad to constant duration afterward.
              */
             for (int s = 1; s < n_stubs; s++) {
                 volatile char *base = buffer + (size_t)s * STREAM_SPACING;
@@ -154,6 +155,9 @@ int main(int argc, char *argv[])
                 }
                 compiler_barrier();
             }
+            /* Pad evictor phase to constant duration regardless of N. */
+            delay_cycles((uint64_t)(max_stubs - n_stubs) * EVICT_TRAIN
+                         * (TRAIN_DELAY + 60));
 
             /*
              * RESUME stream 0 using stub 0

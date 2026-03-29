@@ -27,9 +27,9 @@
 #include "../common/memory.h"
 #include "../common/calibrate.h"
 
-#define TRAIN_LEN       4       /* initial training accesses */
-#define RESUME_LEN      4       /* resume accesses after poison */
-#define MEASURE_AHEAD   3       /* lines beyond resume to measure */
+#define TRAIN_LEN       16      /* must be >= 15 to activate AMP on Golden Cove */
+#define RESUME_LEN      4       /* short resume: enough if tracked, not enough to re-learn */
+#define MEASURE_AHEAD   2       /* lines beyond resume to measure (within prefetch degree) */
 #define DEFAULT_REPS    5000
 #define MAX_POISON      512
 #define PREFETCH_WAIT   1000
@@ -153,12 +153,15 @@ int main(int argc, char *argv[])
 
             /*
              * POISON: N unrelated accesses on distinct pages
+             * Time the phase so we can pad to constant duration.
              */
             for (int p = 0; p < n_poison; p++) {
                 compiler_barrier();
                 force_read(buffer + (size_t)(p + 1) * PAGE_SIZE + 32 * CACHELINE_SIZE);
                 delay_cycles(TRAIN_DELAY);
             }
+            /* Pad poison phase to constant duration regardless of N. */
+            delay_cycles((uint64_t)(max_poison - n_poison) * (TRAIN_DELAY + 60));
             compiler_barrier();
 
             /*

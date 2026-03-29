@@ -28,17 +28,17 @@
 #include "../common/memory.h"
 #include "../common/calibrate.h"
 
-#define INITIAL_TRAIN   4   /* short training for stream 0 (the target) */
-#define EVICT_TRAIN     8   /* longer training for evictor streams */
-#define RESUME_LEN      4   /* accesses when resuming stream 0 */
-#define MEASURE_AHEAD   4   /* how many lines beyond resume to measure */
+#define INITIAL_TRAIN   16  /* must be >= 15 to activate AMP on Golden Cove */
+#define EVICT_TRAIN     16  /* same threshold for evictors to occupy tracker */
+#define RESUME_LEN      4   /* short resume: enough if tracked, not enough to re-learn */
+#define MEASURE_AHEAD   2   /* lines beyond resume to measure (within prefetch degree) */
 #define STREAM_SPACING  (512 * 1024)  /* 512KB between stream bases */
 #define MAX_STREAMS     128
 #define DEFAULT_REPS    5000
 #define PREFETCH_WAIT   1000 /* cycles to wait for prefetcher after resume */
 
 /* Total lines we touch per stream (for flushing) */
-#define LINES_PER_STREAM 24
+#define LINES_PER_STREAM 40  /* must cover INITIAL_TRAIN + RESUME_LEN + MEASURE_AHEAD + margin */
 
 static void usage(const char *prog)
 {
@@ -129,6 +129,7 @@ int main(int argc, char *argv[])
             /*
              * PHASE 3: TRAIN evictor streams 1..N-1
              * Each gets longer training to firmly establish in the tracker.
+             * Time the phase so we can pad to constant duration afterward.
              */
             for (int s = 1; s < n_streams; s++) {
                 volatile char *base = buffer + (size_t)s * STREAM_SPACING;
@@ -139,6 +140,15 @@ int main(int argc, char *argv[])
                 }
                 compiler_barrier();
             }
+            /*
+             * Pad evictor phase to constant duration regardless of N.
+             * Without this, higher N = longer evictor phase = more time
+             * for the prefetcher to run ahead on stream 0, creating a
+             * timing confound that inverts the expected hit_rate curve.
+             * Approximate: each missing evictor ~= EVICT_TRAIN * (TRAIN_DELAY + 60) cycles.
+             */
+            delay_cycles((uint64_t)(max_streams - n_streams) * EVICT_TRAIN
+                         * (TRAIN_DELAY + 60));
 
             /*
              * PHASE 4: RESUME stream 0
