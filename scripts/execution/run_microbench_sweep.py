@@ -25,9 +25,15 @@ BENCH_DIR = os.path.join(PROJECT_ROOT, "benchmarks")
 RESULTS_DIR = os.path.join(PROJECT_ROOT, "results", "microbench")
 
 BENCHMARKS = [
+    # Characterization benchmarks (run first to validate prefetcher behavior)
+    ("training_length_train", "training_length/training_length", ["--mode", "train-length"]),
+    ("training_length_degree", "training_length/training_length", ["--mode", "prefetch-degree"]),
+    ("training_length_wait", "training_length/training_length", ["--mode", "wait-sensitivity"]),
+    ("stride_range", "stride_range/stride_range", []),
+    # Table-size benchmarks
     ("stream_tracker", "stream_tracker/stream_tracker", []),
     ("spatial_region_replay", "spatial_region/spatial_region", ["--mode", "replay"]),
-    ("spatial_region_transfer", "spatial_region/spatial_region", ["--mode", "transfer"]),
+    ("spatial_region_eviction", "spatial_region/spatial_region", ["--mode", "eviction"]),
     ("history_buffer", "history_buffer/history_buffer", []),
     ("ip_table", "ip_table/ip_table", []),
 ]
