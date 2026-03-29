@@ -1,0 +1,11 @@
+results/
+analysis_output/
+
+# Compiled benchmarks
+benchmarks/stream_tracker/stream_tracker
+benchmarks/spatial_region/spatial_region
+benchmarks/history_buffer/history_buffer
+benchmarks/ip_table/ip_table
+benchmarks/training_length/training_length
+benchmarks/stride_range/stride_range
+benchmarks/diagnostic
